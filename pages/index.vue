@@ -9,7 +9,12 @@
             <h3 class="text-sm font-medium mt-11">Pokémons</h3>
 
             <div class="cards mt-9">
-                <cards v-for="(item, index) in 5" :key="index" />
+                <cards
+                    v-for="(item, index) in pokemonsList"
+                    :key="index"
+                    :url="item.url"
+                    :name="item.name"
+                />
             </div>
         </div>
 
@@ -17,13 +22,52 @@
 </template>
 
 <script>
+import { getPokemons, getPokemon } from '@/services/api';
+
 export default {
     name: 'home',
-    methods: {
-        search(term) {
-            console.log(term);
+    data() {
+        return {
+            pokemonsList: [],
+            pokemonData: null,
+            render: true,
+            nextPage: '',
+            infinityLoading: false,
         }
-    }
+    },
+    methods: {
+        async getPokemons() {
+            await getPokemons(20)
+                .then(response => {
+                    const { results } = response.data;
+
+                    this.nextPage = response.data.next;
+
+                    this.pokemonsList = results;
+                })
+        },
+        getNextUser() {
+            window.onscroll = () => {
+                let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
+                if (bottomOfWindow) {
+                    getPokemon(this.nextPage)
+                        .then(response => {
+                            const { results } = response.data;
+
+                            this.nextPage = response.data.next;
+
+                            this.pokemonsList.push(...results);
+                        })
+                }
+            }
+        },
+    },
+    beforeMount() {
+        this.getPokemons();
+    },
+    mounted() {
+        this.getNextUser();
+    },
 }
 </script>
 
@@ -36,4 +80,5 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 2fr));
 }
+
 </style>
